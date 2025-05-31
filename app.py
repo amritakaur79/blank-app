@@ -85,7 +85,7 @@ if st.button("🚀 Generate Mockups"):
                         new_height = int(design.height * scale)
                         resized_design = design.resize((new_width, new_height))
                         x = sx + (sw - new_width) // 2
-                        y_offset = -int(sh * 0.05)  # shift upward by 5%
+                        y_offset = -int(sh * 0.075)  # shift upward by 7.5%
                         y = sy + (sh - new_height) // 2 + y_offset
                     else:
                         resized_design = design

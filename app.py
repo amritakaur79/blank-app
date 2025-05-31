@@ -14,47 +14,60 @@ Upload **multiple design PNGs** and **shirt templates**.
 Assign a name to each design. Each one will be applied to every shirt, automatically centered, and zipped separately.
 """)
 
-# Upload files
-design_files = st.file_uploader("📌 Upload Design Images (PNG)", type=["png"], accept_multiple_files=True)
-shirt_files = st.file_uploader("🎨 Upload Shirt Templates (PNG)", type=["png"], accept_multiple_files=True)
-
-
-# Collect names for each design
-design_names = {}
-if design_files is not None and len(design_files) > 0:
-    st.markdown("### ✏️ Name Each Design")
-    for i, file in enumerate(design_files):
-        default_name = os.path.splitext(file.name)[0]
-        custom_name = st.text_input(f"Name for Design {i+1} ({file.name})", value=default_name)
-        design_names[file.name] = custom_name
-
-# Prepare session state for download preservation
+# --- Session Setup ---
 if "zip_files_output" not in st.session_state:
     st.session_state.zip_files_output = {}
+if "design_files" not in st.session_state:
+    st.session_state.design_files = None
+if "design_names" not in st.session_state:
+    st.session_state.design_names = {}
 
-# OpenCV shirt bounding box detection
+# --- Upload Section ---
+st.session_state.design_files = st.file_uploader(
+    "📌 Upload Design Images (PNG)", type=["png"], accept_multiple_files=True
+)
+shirt_files = st.file_uploader(
+    "🎨 Upload Shirt Templates (PNG)", type=["png"], accept_multiple_files=True
+)
+
+# --- Clear Design Button ---
+if st.button("🔄 Start Over (Clear Designs Only)"):
+    for key in ["design_files", "design_names", "zip_files_output"]:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.experimental_rerun()
+
+# --- Design Naming ---
+if st.session_state.design_files:
+    st.markdown("### ✏️ Name Each Design")
+    for i, file in enumerate(st.session_state.design_files):
+        default_name = os.path.splitext(file.name)[0]
+        custom_name = st.text_input(
+            f"Name for Design {i+1} ({file.name})", 
+            value=st.session_state.design_names.get(file.name, default_name),
+            key=f"name_input_{file.name}"
+        )
+        st.session_state.design_names[file.name] = custom_name
+
+# --- Bounding Box Detection ---
 def get_shirt_bbox(pil_image):
-    """Detect shirt area in the image and return bounding box (x, y, w, h)"""
-    img_cv = np.array(pil_image.convert("RGB"))[:, :, ::-1]  # Convert to BGR
+    img_cv = np.array(pil_image.convert("RGB"))[:, :, ::-1]
     gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
     blurred = cv2.GaussianBlur(gray, (5, 5), 0)
     _, thresh = cv2.threshold(blurred, 240, 255, cv2.THRESH_BINARY_INV)
-
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
     if contours:
         largest = max(contours, key=cv2.contourArea)
-        x, y, w, h = cv2.boundingRect(largest)
-        return x, y, w, h
-    else:
-        return None
+        return cv2.boundingRect(largest)
+    return None
 
+# --- Generate Mockups ---
 if st.button("🚀 Generate Mockups"):
-    if not (design_files and shirt_files):
+    if not (st.session_state.design_files and shirt_files):
         st.warning("Please upload at least one design and one shirt template.")
     else:
-        for design_file in design_files:
-            graphic_name = design_names.get(design_file.name, "graphic")
+        for design_file in st.session_state.design_files:
+            graphic_name = st.session_state.design_names.get(design_file.name, "graphic")
             design = Image.open(design_file).convert("RGBA")
 
             zip_buffer = io.BytesIO()
@@ -71,7 +84,6 @@ if st.button("🚀 Generate Mockups"):
                         new_width = int(design.width * scale)
                         new_height = int(design.height * scale)
                         resized_design = design.resize((new_width, new_height))
-
                         x = sx + (sw - new_width) // 2
                         y = sy + (sh - new_height) // 2
                     else:
@@ -93,7 +105,7 @@ if st.button("🚀 Generate Mockups"):
 
         st.success("✅ All mockups generated and centered!")
 
-# Persistent download buttons
+# --- Download Buttons ---
 if st.session_state.zip_files_output:
     for name, zip_data in st.session_state.zip_files_output.items():
         st.download_button(
@@ -101,5 +113,5 @@ if st.session_state.zip_files_output:
             data=zip_data,
             file_name=f"{name}_mockups.zip",
             mime="application/zip",
-            key=f"download_{name}"  # Unique key per button
+            key=f"download_{name}"
         )

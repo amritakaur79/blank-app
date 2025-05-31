@@ -59,19 +59,43 @@ if st.session_state.design_files:
 
 # --- Bounding Box and Angle Detection ---
 def get_shirt_bbox_and_angle(pil_image):
-    img_cv = np.array(pil_image.convert("RGB"))[:, :, ::-1]
-    gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-    _, thresh = cv2.threshold(blurred, 240, 255, cv2.THRESH_BINARY_INV)
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    try:
+        import mediapipe as mp
 
-    if contours:
-        largest = max(contours, key=cv2.contourArea)
-        rect = cv2.minAreaRect(largest)
-        (x, y), (w, h), angle = rect
-        bbox = cv2.boundingRect(largest)
-        return bbox, angle
-    return None, 0
+        img_cv = np.array(pil_image.convert("RGB"))
+        mp_pose = mp.solutions.pose
+        with mp_pose.Pose(static_image_mode=True) as pose:
+            results = pose.process(img_cv)
+            if results.pose_landmarks:
+                # Get left and right shoulder coordinates
+                left = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
+                right = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
+                # Convert to pixel positions
+                h, w, _ = img_cv.shape
+                lx, ly = int(left.x * w), int(left.y * h)
+                rx, ry = int(right.x * w), int(right.y * h)
+                # Calculate angle in degrees
+                angle_rad = np.arctan2(ry - ly, rx - lx)
+                angle_deg = np.degrees(angle_rad)
+                # Approximate shirt bounding box between shoulders
+                top_y = min(ly, ry) - int(0.1 * h)
+                left_x = min(lx, rx) - int(0.15 * w)
+                width = abs(rx - lx) + int(0.3 * w)
+                height = int(0.5 * h)
+                return (left_x, top_y, width, height), angle_deg
+        return None, 0
+    except Exception:
+        # Fallback: OpenCV bounding box only
+        img_cv = np.array(pil_image.convert("RGB"))[:, :, ::-1]
+        gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        _, thresh = cv2.threshold(blurred, 240, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if contours:
+            largest = max(contours, key=cv2.contourArea)
+            x, y, w, h = cv2.boundingRect(largest)
+            return (x, y, w, h), 0
+        return None, 0
 
 # --- Generate Mockups ---
 if st.button("🚀 Generate Mockups") and st.session_state.design_files:
@@ -96,7 +120,10 @@ if st.button("🚀 Generate Mockups") and st.session_state.design_files:
                         new_height = int(design.height * scale)
                         resized_design = design.resize((new_width, new_height))
 
-                        rotated_design = resized_design.rotate(angle, expand=True)
+                        if abs(angle) > 10 and abs(angle) < 80:
+                            rotated_design = resized_design.rotate(angle, expand=True)
+                        else:
+                            rotated_design = resized_design
 
                         y_offset = int(sh * vertical_shift_pct / 100)
                         x = sx + (sw - rotated_design.width) // 2

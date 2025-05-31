@@ -31,7 +31,7 @@ shirt_files = st.file_uploader(
 )
 
 # --- Clear Design Button ---
-if st.button("🔄 Start Over (Clear Designs Only)"):
+if st.button("🔄 Start Over (Clear Generated Mockups)"):
     for key in ["design_files", "design_names", "zip_files_output"]:
         if key in st.session_state:
             del st.session_state[key]

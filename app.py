@@ -35,7 +35,7 @@ if st.button("🔄 Start Over (Clear Designs Only)"):
     for key in ["design_files", "design_names", "zip_files_output"]:
         if key in st.session_state:
             del st.session_state[key]
-    st.experimental_rerun()
+    st.rerun()
 
 # --- Design Naming ---
 if st.session_state.design_files:

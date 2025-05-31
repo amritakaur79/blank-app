@@ -76,7 +76,7 @@ if st.button("🚀 Generate Mockups"):
                     color_name = os.path.splitext(shirt_file.name)[0]
                     shirt = Image.open(shirt_file).convert("RGBA")
 
-                    PADDING_RATIO = 0.60
+                    PADDING_RATIO = 0.50
                     bbox = get_shirt_bbox(shirt)
                     if bbox:
                         sx, sy, sw, sh = bbox

@@ -18,6 +18,7 @@ Assign a name to each design. Each one will be applied to every shirt, automatic
 design_files = st.file_uploader("📌 Upload Design Images (PNG)", type=["png"], accept_multiple_files=True)
 shirt_files = st.file_uploader("🎨 Upload Shirt Templates (PNG)", type=["png"], accept_multiple_files=True)
 
+
 # Collect names for each design
 design_names = {}
 if design_files is not None and len(design_files) > 0:
@@ -26,6 +27,10 @@ if design_files is not None and len(design_files) > 0:
         default_name = os.path.splitext(file.name)[0]
         custom_name = st.text_input(f"Name for Design {i+1} ({file.name})", value=default_name)
         design_names[file.name] = custom_name
+
+# Prepare session state for download preservation
+if "zip_files_output" not in st.session_state:
+    st.session_state.zip_files_output = {}
 
 # OpenCV shirt bounding box detection
 def get_shirt_bbox(pil_image):
@@ -48,26 +53,21 @@ if st.button("🚀 Generate Mockups"):
     if not (design_files and shirt_files):
         st.warning("Please upload at least one design and one shirt template.")
     else:
-        zip_files_output = {}
-
         for design_file in design_files:
             graphic_name = design_names.get(design_file.name, "graphic")
             design = Image.open(design_file).convert("RGBA")
 
-            # Keep original size
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, "a", zipfile.ZIP_DEFLATED) as zipf:
                 for shirt_file in shirt_files:
                     color_name = os.path.splitext(shirt_file.name)[0]
                     shirt = Image.open(shirt_file).convert("RGBA")
 
-                    # Detect shirt bounding box
+                    PADDING_RATIO = 0.85
                     bbox = get_shirt_bbox(shirt)
                     if bbox:
                         sx, sy, sw, sh = bbox
-
-                        # Resize graphic if too large for bounding box
-                        scale = min(sw / design.width, sh / design.height, 1.0)  # don't upscale
+                        scale = min(sw / design.width, sh / design.height, 1.0) * PADDING_RATIO
                         new_width = int(design.width * scale)
                         new_height = int(design.height * scale)
                         resized_design = design.resize((new_width, new_height))
@@ -75,30 +75,31 @@ if st.button("🚀 Generate Mockups"):
                         x = sx + (sw - new_width) // 2
                         y = sy + (sh - new_height) // 2
                     else:
-                         # fallback to center on entire image
                         resized_design = design
                         x = (shirt.width - design.width) // 2
                         y = (shirt.height - design.height) // 2
 
-                    # Paste the (resized) graphic
                     shirt_copy = shirt.copy()
                     shirt_copy.paste(resized_design, (x, y), resized_design)
 
-                    # Export the final image
                     output_name = f"{graphic_name}_{color_name}_tee.png"
                     img_byte_arr = io.BytesIO()
                     shirt_copy.save(img_byte_arr, format='PNG')
+                    img_byte_arr.seek(0)
                     zipf.writestr(output_name, img_byte_arr.getvalue())
-                    
+
             zip_buffer.seek(0)
-            zip_files_output[graphic_name] = zip_buffer
+            st.session_state.zip_files_output[graphic_name] = zip_buffer
 
         st.success("✅ All mockups generated and centered!")
 
-        for name, zip_data in zip_files_output.items():
-            st.download_button(
-                label=f"📦 Download {name}_mockups.zip",
-                data=zip_data,
-                file_name=f"{name}_mockups.zip",
-                mime="application/zip"
-            )
+# Persistent download buttons
+if st.session_state.zip_files_output:
+    for name, zip_data in st.session_state.zip_files_output.items():
+        st.download_button(
+            label=f"📦 Download {name}_mockups.zip",
+            data=zip_data,
+            file_name=f"{name}_mockups.zip",
+            mime="application/zip",
+            key=f"download_{name}"  # Unique key per button
+        )

@@ -17,6 +17,15 @@ Each design will be applied to every shirt, automatically **centered** and **rot
 # --- Sidebar Controls ---
 PADDING_RATIO = st.sidebar.slider("Padding Ratio", 0.1, 1.0, 0.45, 0.05)
 vertical_shift_pct = st.sidebar.slider("Vertical Offset % (up = negative)", -20, 20, -7, 1)
+angle_manual_default = st.sidebar.slider("Rotate Graphic (°)", -45, 45, 0, 1)
+
+# Optional angle override per shirt
+angle_overrides = {}
+if shirt_files:
+    st.sidebar.markdown("#### 🧭 Per-Shirt Angle Overrides")
+    for file in shirt_files:
+        name = file.name
+        angle_overrides[name] = st.sidebar.slider(f"{name}", -45, 45, angle_manual_default, 1)
 
 # --- Session Setup ---
 if "zip_files_output" not in st.session_state:
@@ -57,47 +66,21 @@ if st.session_state.design_files:
         )
         st.session_state.design_names[file.name] = custom_name
 
-# --- Bounding Box and Angle Detection ---
+# --- Bounding Box Detection ---
 def get_shirt_bbox_and_angle(pil_image):
-    try:
-        import mediapipe as mp
-
-        img_cv = np.array(pil_image.convert("RGB"))
-        mp_pose = mp.solutions.pose
-        with mp_pose.Pose(static_image_mode=True) as pose:
-            results = pose.process(img_cv)
-            if results.pose_landmarks:
-                # Get left and right shoulder coordinates
-                left = results.pose_landmarks.landmark[mp_pose.PoseLandmark.LEFT_SHOULDER]
-                right = results.pose_landmarks.landmark[mp_pose.PoseLandmark.RIGHT_SHOULDER]
-                # Convert to pixel positions
-                h, w, _ = img_cv.shape
-                lx, ly = int(left.x * w), int(left.y * h)
-                rx, ry = int(right.x * w), int(right.y * h)
-                # Calculate angle in degrees
-                angle_rad = np.arctan2(ry - ly, rx - lx)
-                angle_deg = np.degrees(angle_rad)
-                # Approximate shirt bounding box between shoulders
-                top_y = min(ly, ry) - int(0.1 * h)
-                left_x = min(lx, rx) - int(0.15 * w)
-                width = abs(rx - lx) + int(0.3 * w)
-                height = int(0.5 * h)
-                return (left_x, top_y, width, height), angle_deg
-        return None, 0
-    except Exception:
-        # Fallback: OpenCV bounding box only
-        img_cv = np.array(pil_image.convert("RGB"))[:, :, ::-1]
-        gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
-        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-        _, thresh = cv2.threshold(blurred, 240, 255, cv2.THRESH_BINARY_INV)
-        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        if contours:
-            largest = max(contours, key=cv2.contourArea)
-            x, y, w, h = cv2.boundingRect(largest)
-            return (x, y, w, h), 0
-        return None, 0
+    img_cv = np.array(pil_image.convert("RGB"))[:, :, ::-1]
+    gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    _, thresh = cv2.threshold(blurred, 240, 255, cv2.THRESH_BINARY_INV)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if contours:
+        largest = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(largest)
+        return (x, y, w, h), 0
+    return None, 0
 
 # --- Generate Mockups ---
+preview_shown = False
 if st.button("🚀 Generate Mockups") and st.session_state.design_files:
     if not (st.session_state.design_files and shirt_files):
         st.warning("Please upload at least one design and one shirt template.")
@@ -120,10 +103,8 @@ if st.button("🚀 Generate Mockups") and st.session_state.design_files:
                         new_height = int(design.height * scale)
                         resized_design = design.resize((new_width, new_height))
 
-                        if abs(angle) > 10 and abs(angle) < 80:
-                            rotated_design = resized_design.rotate(angle, expand=True)
-                        else:
-                            rotated_design = resized_design
+                        angle_for_this = angle_overrides.get(shirt_file.name, angle_manual_default)
+                        rotated_design = resized_design.rotate(angle_for_this, expand=True)
 
                         y_offset = int(sh * vertical_shift_pct / 100)
                         x = sx + (sw - rotated_design.width) // 2
@@ -135,6 +116,10 @@ if st.button("🚀 Generate Mockups") and st.session_state.design_files:
 
                     shirt_copy = shirt.copy()
                     shirt_copy.paste(rotated_design, (x, y), rotated_design)
+
+                    if not preview_shown:
+                        st.image(shirt_copy, caption=f"Preview: {graphic_name} on {color_name}", use_column_width=True)
+                        preview_shown = True
 
                     output_name = f"{graphic_name}_{color_name}_tee.png"
                     img_byte_arr = io.BytesIO()

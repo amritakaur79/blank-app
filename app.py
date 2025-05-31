@@ -84,7 +84,12 @@ if st.button("🚀 Generate Mockups"):
                     shirt_copy = shirt.copy()
                     shirt_copy.paste(resized_design, (x, y), resized_design)
 
-
+                    # Export the final image
+                    output_name = f"{graphic_name}_{color_name}_tee.png"
+                    img_byte_arr = io.BytesIO()
+                    shirt_copy.save(img_byte_arr, format='PNG')
+                    zipf.writestr(output_name, img_byte_arr.getvalue())
+                    
             zip_buffer.seek(0)
             zip_files_output[graphic_name] = zip_buffer
 

@@ -65,20 +65,25 @@ if st.button("🚀 Generate Mockups"):
                     bbox = get_shirt_bbox(shirt)
                     if bbox:
                         sx, sy, sw, sh = bbox
-                        x = sx + (sw - design.width) // 2
-                        y = sy + (sh - design.height) // 2
+
+                        # Resize graphic if too large for bounding box
+                        scale = min(sw / design.width, sh / design.height, 1.0)  # don't upscale
+                        new_width = int(design.width * scale)
+                        new_height = int(design.height * scale)
+                        resized_design = design.resize((new_width, new_height))
+
+                        x = sx + (sw - new_width) // 2
+                        y = sy + (sh - new_height) // 2
                     else:
+                         # fallback to center on entire image
+                        resized_design = design
                         x = (shirt.width - design.width) // 2
                         y = (shirt.height - design.height) // 2
 
-                    # Overlay design
+                    # Paste the (resized) graphic
                     shirt_copy = shirt.copy()
-                    shirt_copy.paste(design, (x, y), design)
+                    shirt_copy.paste(resized_design, (x, y), resized_design)
 
-                    output_name = f"{graphic_name}_{color_name}_tee.png"
-                    img_byte_arr = io.BytesIO()
-                    shirt_copy.save(img_byte_arr, format='PNG')
-                    zipf.writestr(output_name, img_byte_arr.getvalue())
 
             zip_buffer.seek(0)
             zip_files_output[graphic_name] = zip_buffer

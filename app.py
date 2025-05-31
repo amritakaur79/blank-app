@@ -76,7 +76,7 @@ if st.button("🚀 Generate Mockups"):
                     color_name = os.path.splitext(shirt_file.name)[0]
                     shirt = Image.open(shirt_file).convert("RGBA")
 
-                    PADDING_RATIO = 0.50
+                    PADDING_RATIO = 0.45
                     bbox = get_shirt_bbox(shirt)
                     if bbox:
                         sx, sy, sw, sh = bbox
@@ -85,7 +85,7 @@ if st.button("🚀 Generate Mockups"):
                         new_height = int(design.height * scale)
                         resized_design = design.resize((new_width, new_height))
                         x = sx + (sw - new_width) // 2
-                        y_offset = -int(sh * 0.1)  # shift upward by 10%
+                        y_offset = -int(sh * 0.05)  # shift upward by 5%
                         y = sy + (sh - new_height) // 2 + y_offset
                     else:
                         resized_design = design

@@ -20,7 +20,7 @@ shirt_files = st.file_uploader("🎨 Upload Shirt Templates (PNG)", type=["png"]
 
 # Collect names for each design
 design_names = {}
-if design_files:
+if design_files is not None and len(design_files) > 0:
     st.markdown("### ✏️ Name Each Design")
     for i, file in enumerate(design_files):
         default_name = os.path.splitext(file.name)[0]

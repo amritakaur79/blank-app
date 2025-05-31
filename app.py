@@ -4,6 +4,7 @@ import numpy as np
 import zipfile
 import io
 import cv2
+import os
 
 st.set_page_config(page_title="Shirt Mockup Generator", layout="centered")
 st.title("👕 Shirt Mockup Generator – Auto-Center on Shirt")

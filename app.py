@@ -19,6 +19,9 @@ PADDING_RATIO = st.sidebar.slider("Padding Ratio", 0.1, 1.0, 0.45, 0.05)
 vertical_shift_pct = st.sidebar.slider("Vertical Offset % (up = negative)", -20, 20, -7, 1)
 angle_manual_default = st.sidebar.slider("Rotate Graphic (°)", -45, 45, 0, 1)
 
+# ✅ Prevent NameError by initializing shirt_files early
+shirt_files = None
+
 # Optional angle override per shirt
 angle_overrides = {}
 if shirt_files:

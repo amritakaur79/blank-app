@@ -114,9 +114,9 @@ if st.button("🚀 Generate Mockups"):
 if st.session_state.zip_files_output:
     for name, zip_data in st.session_state.zip_files_output.items():
         st.download_button(
-            label=f"📦 Download {name}_mockups.zip",
+            label=f"📦 Download {name}.zip",
             data=zip_data,
-            file_name=f"{name}_mockups.zip",
+            file_name=f"{name}.zip",
             mime="application/zip",
             key=f"download_{name}"
         )

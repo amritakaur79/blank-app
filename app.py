@@ -29,10 +29,10 @@ if "design_names" not in st.session_state:
 
 # --- Upload Section ---
 st.session_state.design_files = st.file_uploader(
-    "📌 Upload Design Images (PNG, jpg, jpeg)", type=["png", "jpg", "jpeg"], accept_multiple_files=True
+    "📌 Upload Design Images (PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"], accept_multiple_files=True
 )
 shirt_files = st.file_uploader(
-    "🎨 Upload Shirt Templates (PNG, jpg, jpeg)", type=["png", "jpg", "jpeg"], accept_multiple_files=True
+    "🎨 Upload Shirt Templates (PNG, JPG, JPEG)", type=["png", "jpg", "jpeg"], accept_multiple_files=True
 )
 
 # --- Clear Design Button ---

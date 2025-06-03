@@ -1,3 +1,4 @@
+
 import streamlit as st
 from PIL import Image
 import numpy as np
@@ -13,6 +14,10 @@ st.markdown("""
 Upload **multiple design PNGs** and **shirt templates**.  
 Assign a name to each design. Each one will be applied to every shirt, automatically centered, and zipped separately.
 """)
+
+# --- Sidebar Controls ---
+PADDING_RATIO = st.sidebar.slider("Padding Ratio", 0.1, 1.0, 0.45, 0.05)
+vertical_shift_pct = st.sidebar.slider("Vertical Offset % (up = negative)", -20, 20, -7, 1)
 
 # --- Session Setup ---
 if "zip_files_output" not in st.session_state:
@@ -76,7 +81,6 @@ if st.button("🚀 Generate Mockups"):
                     color_name = os.path.splitext(shirt_file.name)[0]
                     shirt = Image.open(shirt_file).convert("RGBA")
 
-                    PADDING_RATIO = 0.45
                     bbox = get_shirt_bbox(shirt)
                     if bbox:
                         sx, sy, sw, sh = bbox
@@ -84,8 +88,8 @@ if st.button("🚀 Generate Mockups"):
                         new_width = int(design.width * scale)
                         new_height = int(design.height * scale)
                         resized_design = design.resize((new_width, new_height))
+                        y_offset = int(sh * vertical_shift_pct / 100)
                         x = sx + (sw - new_width) // 2
-                        y_offset = -int(sh * 0.075)  # shift upward by 7.5%
                         y = sy + (sh - new_height) // 2 + y_offset
                     else:
                         resized_design = design

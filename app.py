@@ -7,11 +7,11 @@ import cv2
 import os
 
 st.set_page_config(page_title="Shirt Mockup Generator", layout="centered")
-st.title("👕 Shirt Mockup Generator – Manual Tag for Model Shirts")
+st.title("👕 Shirt Mockup Generator – Auto-Detect Model from Filename")
 
 st.markdown("""
 Upload **multiple design PNGs** and **shirt templates**.  
-Tag shirt mockups as either plain or with a model to fine-tune placement offsets.
+If a shirt filename contains `"model"`, the design will be adjusted accordingly using model placement.
 """)
 
 # --- Sidebar Sliders ---
@@ -54,14 +54,6 @@ if st.session_state.design_files:
         )
         st.session_state.design_names[file.name] = custom_name
 
-# --- Manual Shirt Tagging ---
-shirt_type_map = {}
-if shirt_files:
-    st.markdown("### 🧍 Mark Shirt Images with Models")
-    for shirt_file in shirt_files:
-        is_model = st.checkbox(f"Does '{shirt_file.name}' have a model?", key=f"model_{shirt_file.name}")
-        shirt_type_map[shirt_file.name] = is_model
-
 # --- Bounding Box Detection ---
 def get_shirt_bbox(pil_image):
     img_cv = np.array(pil_image.convert("RGB"))[:, :, ::-1]
@@ -89,6 +81,10 @@ if st.button("🚀 Generate Mockups"):
                     color_name = os.path.splitext(shirt_file.name)[0]
                     shirt = Image.open(shirt_file).convert("RGBA")
 
+                    # Auto-detect model from filename
+                    is_model = "model" in shirt_file.name.lower()
+                    offset_pct = model_offset_pct if is_model else plain_offset_pct
+
                     bbox = get_shirt_bbox(shirt)
                     if bbox:
                         sx, sy, sw, sh = bbox
@@ -97,10 +93,7 @@ if st.button("🚀 Generate Mockups"):
                         new_height = int(design.height * scale)
                         resized_design = design.resize((new_width, new_height))
 
-                        is_model = shirt_type_map.get(shirt_file.name, False)
-                        offset_pct = model_offset_pct if is_model else plain_offset_pct
                         y_offset = int(sh * offset_pct / 100)
-
                         x = sx + (sw - new_width) // 2
                         y = sy + (sh - new_height) // 2 + y_offset
                     else:

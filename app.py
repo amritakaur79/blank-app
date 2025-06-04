@@ -7,17 +7,17 @@ import cv2
 import os
 
 st.set_page_config(page_title="Shirt Mockup Generator", layout="centered")
-st.title("👕 Shirt Mockup Generator – Auto-Center on Shirt")
+st.title("👕 Shirt Mockup Generator – Manual Tag for Model Shirts")
 
 st.markdown("""
-Upload **multiple design PNGs, JPGs** and **shirt templates**.  
-Assign a name to each design. Each one will be applied to every shirt, automatically centered, and zipped separately.
+Upload **multiple design PNGs** and **shirt templates**.  
+Tag shirt mockups as either plain or with a model to fine-tune placement offsets.
 """)
 
-# --- Sidebar Controls ---
+# --- Sidebar Sliders ---
 PADDING_RATIO = st.sidebar.slider("Padding Ratio", 0.1, 1.0, 0.45, 0.05)
-plain_offset_pct = st.sidebar.slider("🧾 Plain Shirt Offset %", -30, 30, -7, 1)
-model_offset_pct = st.sidebar.slider("👤 Model Image Offset %", -30, 30, 5, 1)
+plain_offset_pct = st.sidebar.slider("Vertical Offset – Plain Shirt (%)", -20, 20, -7, 1)
+model_offset_pct = st.sidebar.slider("Vertical Offset – Model Shirt (%)", -20, 20, 3, 1)
 
 # --- Session Setup ---
 if "zip_files_output" not in st.session_state:
@@ -54,6 +54,14 @@ if st.session_state.design_files:
         )
         st.session_state.design_names[file.name] = custom_name
 
+# --- Manual Shirt Tagging ---
+shirt_type_map = {}
+if shirt_files:
+    st.markdown("### 🧍 Mark Shirt Images with Models")
+    for shirt_file in shirt_files:
+        is_model = st.checkbox(f"Does '{shirt_file.name}' have a model?", key=f"model_{shirt_file.name}")
+        shirt_type_map[shirt_file.name] = is_model
+
 # --- Bounding Box Detection ---
 def get_shirt_bbox(pil_image):
     img_cv = np.array(pil_image.convert("RGB"))[:, :, ::-1]
@@ -89,10 +97,9 @@ if st.button("🚀 Generate Mockups"):
                         new_height = int(design.height * scale)
                         resized_design = design.resize((new_width, new_height))
 
-                        # Detect model vs plain shirt using bbox height
-                        is_model = sh < 0.6 * shirt.height
-                        custom_offset_pct = model_offset_pct if is_model else plain_offset_pct
-                        y_offset = int(sh * custom_offset_pct / 100)
+                        is_model = shirt_type_map.get(shirt_file.name, False)
+                        offset_pct = model_offset_pct if is_model else plain_offset_pct
+                        y_offset = int(sh * offset_pct / 100)
 
                         x = sx + (sw - new_width) // 2
                         y = sy + (sh - new_height) // 2 + y_offset

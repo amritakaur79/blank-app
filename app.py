@@ -1,4 +1,3 @@
-
 import streamlit as st
 from PIL import Image
 import numpy as np
@@ -11,7 +10,7 @@ st.set_page_config(page_title="Shirt Mockup Generator", layout="centered")
 st.title("👕 Shirt Mockup Generator – Auto-Center on Shirt")
 
 st.markdown("""
-Upload **multiple design PNGs** and **shirt templates**.  
+Upload **multiple design PNGs, JPGs** and **shirt templates**.  
 Assign a name to each design. Each one will be applied to every shirt, automatically centered, and zipped separately.
 """)
 
@@ -88,7 +87,12 @@ if st.button("🚀 Generate Mockups"):
                         new_width = int(design.width * scale)
                         new_height = int(design.height * scale)
                         resized_design = design.resize((new_width, new_height))
-                        y_offset = int(sh * vertical_shift_pct / 100)
+
+                        # Adjust offset: darker image → assume mannequin, use extra upward shift
+                        brightness = np.mean(np.array(shirt.convert("L")))
+                        extra_offset = -int(sh * 0.05) if brightness < 160 else 0
+
+                        y_offset = int(sh * vertical_shift_pct / 100) + extra_offset
                         x = sx + (sw - new_width) // 2
                         y = sy + (sh - new_height) // 2 + y_offset
                     else:

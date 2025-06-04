@@ -87,20 +87,22 @@ if st.button("🚀 Generate Mockups"):
 
                     bbox = get_shirt_bbox(shirt)
                     bbox = get_shirt_bbox(shirt)
+                    bbox = get_shirt_bbox(shirt)
+                    bbox = get_shirt_bbox(shirt)
                     if bbox:
-                        sx, sy, sw, sh = bbox
-                        scale = min(sw / design.width, sh / design.height, 1.0) * PADDING_RATIO
-                        new_width = int(design.width * scale)
-                        new_height = int(design.height * scale)
-                        resized_design = design.resize((new_width, new_height))
-
-                        y = int(shirt.height * offset_pct / 100)
-                        x = sx + (sw - new_width) // 2
-
+                        sx, _, sw, _ = bbox  # Only use bounding box for horizontal alignment
+                        scale = min(sw / design.width, shirt.height / design.height, 1.0) * PADDING_RATIO
                     else:
-                        resized_design = design
-                        x = (shirt.width - design.width) // 2
-                        y = (shirt.height - design.height) // 2
+                        sx = 0
+                        scale = PADDING_RATIO
+
+                    new_width = int(design.width * scale)
+                    new_height = int(design.height * scale)
+                    resized_design = design.resize((new_width, new_height))
+
+                    # Full image vertical offset
+                    y = int(shirt.height * offset_pct / 100)
+                    x = sx + (sw - new_width) // 2 if bbox else (shirt.width - new_width) // 2
 
                     shirt_copy = shirt.copy()
                     shirt_copy.paste(resized_design, (x, y), resized_design)

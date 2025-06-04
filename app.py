@@ -94,9 +94,9 @@ if st.button("🚀 Generate Mockups"):
                         new_height = int(design.height * scale)
                         resized_design = design.resize((new_width, new_height))
 
-                        y_offset = int(sh * offset_pct / 100)
+                        y = int(shirt.height * offset_pct / 100)
                         x = sx + (sw - new_width) // 2
-                        y = sy + y_offset  # Top-aligned placement
+
                     else:
                         resized_design = design
                         x = (shirt.width - design.width) // 2

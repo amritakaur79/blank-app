@@ -88,13 +88,13 @@ if st.button("🚀 Generate Mockups"):
                         new_height = int(design.height * scale)
                         resized_design = design.resize((new_width, new_height))
 
-                        # Adjust offset: darker image → assume mannequin, use extra upward shift
-                        brightness = np.mean(np.array(shirt.convert("L")))
-                        extra_offset = int(sh * 0.05) if brightness < 160 else 0
+                        is_model = sh < 0.6 * shirt.height
+                        extra_offset = int(sh * 0.10) if is_model else 0
 
                         y_offset = int(sh * vertical_shift_pct / 100) + extra_offset
                         x = sx + (sw - new_width) // 2
                         y = sy + (sh - new_height) // 2 + y_offset
+
                     else:
                         resized_design = design
                         x = (shirt.width - design.width) // 2

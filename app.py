@@ -54,14 +54,6 @@ if st.session_state.design_files:
         )
         st.session_state.design_names[file.name] = custom_name
 
-# --- Manual Shirt Tagging ---
-shirt_type_map = {}
-if shirt_files:
-    st.markdown("### 🧍 Mark Shirt Images with Models")
-    for shirt_file in shirt_files:
-        is_model = st.checkbox(f"Does '{shirt_file.name}' have a model?", key=f"model_{shirt_file.name}")
-        shirt_type_map[shirt_file.name] = is_model
-
 # --- Bounding Box Detection ---
 def get_shirt_bbox(pil_image):
     img_cv = np.array(pil_image.convert("RGB"))[:, :, ::-1]
@@ -88,6 +80,11 @@ if st.button("🚀 Generate Mockups"):
                 for shirt_file in shirt_files:
                     color_name = os.path.splitext(shirt_file.name)[0]
                     shirt = Image.open(shirt_file).convert("RGBA")
+
+                    
+                    # Auto-detect model from filename
+                    is_model = "model" in shirt_file.name.lower()
+                    offset_pct = model_offset_pct if is_model else plain_offset_pct
 
                     bbox = get_shirt_bbox(shirt)
                     if bbox:

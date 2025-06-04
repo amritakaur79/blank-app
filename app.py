@@ -54,6 +54,7 @@ if st.session_state.design_files:
         )
         st.session_state.design_names[file.name] = custom_name
 
+
 # --- Bounding Box Detection ---
 def get_shirt_bbox(pil_image):
     img_cv = np.array(pil_image.convert("RGB"))[:, :, ::-1]
@@ -85,7 +86,7 @@ if st.button("🚀 Generate Mockups"):
                     # Auto-detect model from filename
                     is_model = "model" in shirt_file.name.lower()
                     offset_pct = model_offset_pct if is_model else plain_offset_pct
-
+                    
                     bbox = get_shirt_bbox(shirt)
                     if bbox:
                         sx, sy, sw, sh = bbox
@@ -94,8 +95,6 @@ if st.button("🚀 Generate Mockups"):
                         new_height = int(design.height * scale)
                         resized_design = design.resize((new_width, new_height))
 
-                        is_model = shirt_type_map.get(shirt_file.name, False)
-                        offset_pct = model_offset_pct if is_model else plain_offset_pct
                         y_offset = int(sh * offset_pct / 100)
 
                         x = sx + (sw - new_width) // 2

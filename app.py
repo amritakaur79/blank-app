@@ -90,7 +90,7 @@ if st.button("🚀 Generate Mockups"):
 
                         # Adjust offset: darker image → assume mannequin, use extra upward shift
                         brightness = np.mean(np.array(shirt.convert("L")))
-                        extra_offset = -int(sh * 0.05) if brightness < 160 else 0
+                        extra_offset = int(sh * 0.05) if brightness < 160 else 0
 
                         y_offset = int(sh * vertical_shift_pct / 100) + extra_offset
                         x = sx + (sw - new_width) // 2

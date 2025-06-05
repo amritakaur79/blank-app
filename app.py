@@ -50,7 +50,7 @@ if st.session_state.design_files:
         custom_name = st.text_input(
             f"Name for Design {i+1} ({file.name})", 
             value=st.session_state.design_names.get(file.name, default_name),
-            key=f"name_input_{file.name}"
+            key=f"name_input_{i}_{file.name}"
         )
         st.session_state.design_names[file.name] = custom_name
 
